@@ -1,0 +1,223 @@
+* {
+  font-family: Verdana, Arial, Helvetica, sans-serif;
+}
+
+h1 {
+  text-align: center;
+  margin-top: 0.5%;
+  margin-bottom: 0.5%;
+  font-size: 150%;
+}
+
+p {
+  display: inline-block;
+}
+
+
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 15px;
+  width: 100%;
+  background: #d3d3d3;
+}
+.sliderContainer {
+  display: grid;
+  width: auto;
+}
+.checkBoxContainer {
+  display: inline-block;
+  width: auto;
+}
+.sliderContainer > div {
+  grid-template-columns: auto auto auto;
+  background-color: rgba(255, 255, 255, 0.8);
+  text-align: center;
+}
+.slidersContainer {
+  display: inline-block;
+}
+/*For canvases*/
+.center {
+  position: relative;
+  left: 50%;
+  -ms-transform: translateX(-50%);
+  transform: translateX(-50%);
+
+}
+
+button {
+  
+  border: none;
+  color: white;
+  background: black;
+  padding: 1rem 1rem;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 1rem;
+  cursor: pointer;
+  
+}
+
+#explainerText {
+  margin: 1em;
+}
+
+#description {
+    padding-bottom: 1%;
+    padding-left: 1%;
+}
+
+#main-pic {
+    height: 48vw;
+    float: left;
+    padding: 2% 1%;
+}
+
+
+.canvasesContainer {
+  
+  overflow-x: hidden;
+  height: 90vh;
+  display: inline-block;
+  position: relative;
+  padding:1%;
+  padding-bottom: 2%;
+
+}
+/*Was imgg*/
+.canvasContainer {
+  height: 90vh;
+  display: inline-block;
+  position: relative;
+}
+
+/*Was imgg img*/
+.#diskStackingCanvas {
+    width: 50%;
+    margin:1%;
+    margin-left:0%;
+}
+
+/*Was imgg p*/
+#diskStackingCanvas2 {
+    width: auto;
+    margin: 1%;
+    margin-right:0%;
+
+}
+.left {
+  width: 48%;
+  margin:1%;
+  margin-left:0%;
+  float: left;
+  border-radius: 1%;
+    display: inline-block;
+  overflow-y: auto;
+  height: 30vh;
+
+}
+.right {
+  width: auto;
+  margin: 1%;
+  margin-right:0%;
+  border-radius: 1%;
+  height: 30vh;
+  display: inline-block;
+}
+
+/*Was caption-duo*/
+.canvases {
+    margin: 1%;
+    margin-left: 0%;
+  display: block;
+}
+
+#parastichyGraphContainer {
+  width: 45vw;
+  height: 26vh;
+}
+
+
+.grid-container {
+  display: grid;
+  align-content: end;
+grid-template-columns: repeat(6, [col] auto ) ;
+		grid-template-rows: repeat(1, [row] auto  );  gap: 10px;
+}
+
+.grid-container > div {
+  text-align: center;
+  align-items: center;
+}
+
+.box {
+  justify-items: center;
+}
+
+.box .box {
+}
+
+	.settings {
+		grid-column: col / span 1;
+		grid-row: row;
+	}
+
+  .height{
+		grid-column: col 2 / span 1;
+		grid-row: row;
+		display: grid;
+    grid-gap: 0px;
+		grid-template-columns: auto auto 4.5ch;
+	}
+
+  .innerA {
+		grid-column: 1 ;
+		grid-row: 1;
+    text-align: right;
+	}
+
+	.innerB {
+		grid-column: 2;
+		grid-row: 1;
+	}
+
+	.innerC {
+		grid-column: 3;
+		grid-row: 1;
+	}
+
+	.angle {
+		grid-column: col 3/ span 1;
+		grid-row: row;
+		display: grid;
+    grid-gap: 0px;
+		grid-template-columns: auto auto 4ch;
+	}
+
+	.meridian {
+		grid-column: col 4 / span 1;
+		grid-row: row;
+		display: grid;
+    grid-gap: 0px;
+		grid-template-columns: auto auto 4.5ch;
+	}
+
+  .restart {
+		grid-column: col 5 / span 1;
+		grid-row: row;
+	}
+  .showHide {
+    grid-column: col 6 /span 1;
+  }
+
+#errorMessagesDiv {
+  padding-left: 1em;
+  border-style: solid;
+  border-color: red;
+  border-width: 0px;  
+  border-left-width: 1em;
+  background-color: #ffdad8;
+}

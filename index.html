@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>repl.it</title>
+    <link href="style.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.8.0/chart.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/p5@1.4.1/lib/p5.js"></script>
+  </head>
+  <body>
+  
+    <h1 padding="0" margin="0.5%">Disk Stacking on a Cone</h1>
+    <div display="block">
+    <div class="left" id="explainerText">
+      <p>In this application, you can add disks to the cone model by clicking. Use the Angle Slider to test different cone angles; larger cone angles correspond to more rapid growth rates. The Height Slider adjusts the height of the first disk placed on the cone. Additionally, this application displays the <b>ontological graph</b> and the <b>front</b>. The <b>ontological graph</b> is composed of the connections between each disk and its “parent” disks. The app displays it as blue line segments. </p>
+      <p>The <b>front</b> is a way to “locally” count parastichies. In the app, it is shown with red and yellow line segments; red indicates “up” parastichies and yellow indicates “down” parastichies. The current parastichy count given by the front is written underneath the app, and a chart keeping track of these counts in relation to the number of disks in the model is also displayed underneath the app. For smaller cone angles, this chart will clearly show the model stabilizing when its parastichy counts are consecutive Fibonacci numbers, then either the up parastichy count or the down parastichy count quickly transitioning to the next consecutive Fibonacci number. For larger cone angles, this pattern becomes distorted, ultimately evolving into a <b>quasi-symmetric pattern</b>, in which the parastichy counts are nearly the same.
+</p>
+      <p>
+        This extended conical disk stacking application has many options visualizing the disks. The default option is a transformation that deforms the shapes of the disks, but preserves height (the height in the cylinder is the same as the length along an axis in the cone), and preserves the width at the <b>meridian radius</b> marked as the blue arc/line. When a disk is close to the meridian radius, the shape of the deformed disk is close to a circle. In all visualizations, the graph on the right corresponds exactly to the graph on the left. The logarithmic height option in advanced settings is a conformal mapping. There is also an option to toggle the disk shape between circles and deformed circles, and to change the range of disk numbers where that is true. 
+      </p>
+      <p>
+        When the initial parastichy numbers in the advanced settings are both greater than 0, and not 1,1, the Height slider is replaced with a <b>Radius</b> slider. This corresponds to the disk radius that the cone lattice generator uses for calculations (it assumes that the width of the initial front is exactly 1 unit wide). Since the disks are then scaled to remain the same size, this slider corresponds inversely to the height of the front. On this slider, 0% corresponds to the calculated minimum viable radius, and 100% corresponds to the calculated maximum viable radius.
+      </p>
+    </div>
+    <div class="right">
+    <div id="parastichyNumbers">
+      <p id="parastichyNumbersText"></p>
+    </div>
+
+    <div id="parastichyGraphContainer">
+      <canvas id="parastichyGraph"></canvas>
+    </div>
+    </div>
+      <br>
+      <br>
+    </div>
+    <div class="grid-container">
+      <div class="box" self-align="center"><p text-align="center">Settings:</p></div>
+      <div class="box height">
+        <div class="box innerA"><p id="heightDesc">Height</p></div>
+        <div class="box innerB"><input type="range" min="0" max = "100" value="50" class="slider" id="heightSlider" width="20"></div>
+        <div class="box innerC"><p id="heightText">50%</p></div>
+      </div>
+      <div class="box angle">
+        <div class="box innerA"><p>Angle</p></div>
+        <div class="box innerB"><input type="range" min="15" max = "179" value="50" class="slider" id="angleSlider" width="20"></div>
+        <div class="box innerC"><p id="angleText">50°</p></div>
+      </div>
+      <div class="box meridian">
+        <div class="box innerA"><p>Meridian Radius</p></div>
+        <div class="box innerB"><input type="range" min="1" max = "200" value="40" class="slider" id="rMeridianSlider" width="20"></div>
+        <div class="box innerC"><p id="rMeridianText">40%</p></div>
+      </div>
+      <div><button id="resetButton">Restart with settings</button></div>
+      <div><button id="showButton">Show advanced settings</button></div>
+    </div>
+    <div id="advSettings" style="display: none;">
+      <div class="checkBoxContainer">
+        <p>Up Parastichies</p>
+      <input type="number" min="0" max = "20" value="0" id="upParastichyNum">
+      <p>|| Down Parastichies</p>
+      <input type="number" min="0" max = "20" value="0" id="downParastichyNum">
+        <p>[Requires restart. Set to 0 for default.]</p>
+      </div>
+      <div class="checkBoxContainer" style="display: block;">
+        <p>Run</p>
+      <input type="number" min="2" max = "100" value="10" id="iterNum">
+      <p> iterations at once.</p>
+      <button id="iterationButton" style="padding: 0.25Rem;margin:0px">Run</button>
+      </div>
+      <div>
+        <p>Zoom</p>
+      <input type="range" class="slider" style="display: inline-block; width: auto;" min="10" max = "200" value="100" id="zoomSlider">
+      <p id="zoomText">100%</p>
+      </div>
+      <div style="display: none;">
+        <p>View Height</p>
+      <input type="range" class="slider" style="display: inline-block; width: auto;" min="50" max = "100" value="50" id="viewHeightSlider">
+      <p id="viewHeightText">50%</p>
+      </div>
+     <div class="checkBoxContainer" style="display: block;">
+      <p>Toggle Logarithmic height</p>
+      <input type="checkbox" id="logHeightBox">
+      <p id="logHeightText">Cylindrical Height matches conical radius</p>
+    </div>
+      <div id="diskShapeOption">
+    <div class="checkBoxContainer" style="display: block;">
+      <p>Toggle Disk Shape</p>
+      <input type="checkbox" id="diskShapeBox">
+      <p id="diskShapeText"> Showing transformed tangent disks </p>
+    </div>
+        <div class="checkBoxContainer" style="display: block;">
+      
+        <div id="circleDiskRange" style="display: none;"> 
+          <p>Minimum and maximum ID number to replace transformed disks with circles:</p>
+        <input type="range" class="slider" style="display: inline-block; width: auto;" min="0" max = "10" value="0" id="circleNumSlider1">
+      <p id="circleNumText1">0</p>
+      <input type="range" class="slider" style="display: inline-block; width: auto;" min="0" max = "10" value="10" id="circleNumSlider2">
+      <p id="circleNumText2">10</p>
+          <div style="display: block;">
+      <p>Toggle constant circle size</p>
+            <div>
+      <input type="checkbox" id="circleSizeBox">
+      <p id="circleSizeText"> Showing individually sized disks </p>
+            </div>
+          </div>
+          <div id="diskRadiusDiv" style="display: none;">
+        <p>Cylindrical Disk Radius</p>
+      <input type="range" class="slider" style="display: inline-block; width: auto;" min="2" max = "20" value="8" id="diskRadiusSlider">
+      <p id="diskRadiusText">8%</p>
+      </div>
+    </div>
+      </div>
+      </div>
+    </div>
+    <div class="checkBoxContainer" id="errorMessagesDiv" style="display: none;">
+      <p id="errorMessages">No errors.</p>
+    </div>
+    <div>
+    <div class="canvasesContainer">
+      <div id="diskStackingCanvas"></div>
+    </div>
+    <div class="canvasesContainer">
+      <div id="diskStackingCanvas2"></div>
+    </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script src="disk.js"></script>
+    <script src="coneLattice.js"></script>
+    <script src="stackingCone.js"></script>
+    
+    <script>
+      // displays the height value
+      let heightSlider = document.getElementById("heightSlider");
+      let heightText = document.getElementById("heightText");
+      heightSlider.oninput = function() {
+        heightText.innerHTML = this.value + "%";
+      }
+          let scroller = document.getElementById("diskStackingCanvas");
+    scroller.scrollTop = scroller.scrollHeight;
+
+      //displays the angle value
+      let angleSlider = document.getElementById("angleSlider");
+      let angleText = document.getElementById("angleText");
+      angleSlider.oninput = function() {
+        angleText.innerHTML = this.value + "°";
+      }
+
+      //displays the meridian radius value
+      let rMeridianSlider = document.getElementById("rMeridianSlider");
+      let rMeridianText = document.getElementById("rMeridianText");
+      rMeridianSlider.oninput = function() {
+        rMeridianText.innerHTML = this.value + "%";
+      }
+
+      //displays the circlNum values
+      let circleNumSlider1 = document.getElementById("circleNumSlider1");
+      let circleNumText1 = document.getElementById("circleNumText1");
+      let circleNumSlider2 = document.getElementById("circleNumSlider2");
+      let circleNumText2 = document.getElementById("circleNumText2");
+      
+      circleNumSlider1.oninput = function() {
+        circleNumText1.innerHTML = this.value;
+        cone.minCircles = cone.p.min(circleNumSlider2.value, this.value)
+        cone.maxCircles = cone.p.max(circleNumSlider2.value, this.value)
+      }
+      circleNumSlider2.oninput = function() {
+        circleNumText2.innerHTML = this.value;
+        cone.minCircles = cone.p.min(circleNumSlider1.value, this.value)
+        cone.maxCircles = cone.p.max(circleNumSlider1.value, this.value)
+      }
+
+      //displays the disk radius value
+      let diskRadiusSlider = document.getElementById("diskRadiusSlider");
+      let diskRadiusText = document.getElementById("diskRadiusText");
+      diskRadiusSlider.oninput = function() {
+        diskRadiusText.innerHTML = this.value + "%";
+        cone.displayRadius = this.value / 100
+      }
+
+      let diskShapeBox = document.getElementById("diskShapeBox");
+      // Get the output text
+      let diskShapeText = document.getElementById("diskShapeText");
+      let circleSizeBox = document.getElementById("circleSizeBox");
+      // Get the output text
+      let circleSizeText = document.getElementById("circleSizeText");
+      diskShapeBox.oninput = function() {
+        circleSizeBox.checked = false
+        circleSizeText.innerHTML = "Showing individually-sized disks";
+      // If the checkbox is checked, display the output text
+        if (diskShapeBox.checked == true){
+          diskShapeText.innerHTML = "Showing circular disks";
+          cone.drawingMode = "circle"
+          document.getElementById("circleDiskRange").style.display = "block"
+          
+        } else {
+          diskShapeText.innerHTML = "Showing transformed tangent disks";
+          cone.drawingMode = ""
+          document.getElementById("circleDiskRange").style.display = "none"
+
+        }
+      }
+
+      
+      circleSizeBox.oninput = function() {
+      // If the checkbox is checked, display the output text
+        if (circleSizeBox.checked == true){
+          circleSizeText.innerHTML = "Showing uniformly-sized disks";
+          cone.drawingMode = "fixedCircle"
+          document.getElementById("diskRadiusDiv").style.display = "block"
+
+        } else {
+          circleSizeText.innerHTML = "Showing individually-sized disks";
+          cone.drawingMode = "circle"
+          document.getElementById("diskRadiusDiv").style.display = "none"
+
+        }
+      }
+      
+      let logHeightBox = document.getElementById("logHeightBox");
+      // Get the output text
+      let diskShapeOption = document.getElementById("diskShapeOption");
+      let logHeightText = document.getElementById("logHeightText");
+      let zoomSlider = document.getElementById("zoomSlider")
+      let zoomSliderText = document.getElementById("zoomText")
+      logHeightBox.oninput = function() {
+      // If the checkbox is checked, display the output text
+        if (logHeightBox.checked == true){
+          diskShapeOption.style.display = "none";
+          logHeightText.innerHTML = "Cylindrical Height on Logarithmic scale";
+          cone.drawingMode = "log"
+          // For logarithmic height, you likely want to zoom *in* to see detail at top.
+          // zoomSlider.min = 50
+          // zoomSlider.max = 500
+          // zoomSlider.value = cone.p.max(50,zoomSlider.value)
+          cone.scale = zoomSlider.value/100
+          zoomSliderText.innerHTML = zoomSlider.value + "%"
+        } else {
+          diskShapeOption.style.display = "block";
+          logHeightText.innerHTML = "Cylindrical Height matches conical radius";
+          if (diskShapeBox.checked == true){
+            cone.drawingMode = "circle"
+          } else {
+            cone.drawingMode = ""
+          } 
+          // For linear height, you likely want to zoom *out*
+          // zoomSlider.min = 10
+          // zoomSlider.max = 200
+          // zoomSlider.value = cone.p.min(200,zoomSlider.value)
+          cone.scale = zoomSlider.value/100
+          zoomSliderText.innerHTML = zoomSlider.value + "%"
+        }
+      }
+
+      zoomSlider.oninput = function() {
+        cone.scale = zoomSlider.value / 100
+        zoomSliderText.innerHTML = zoomSlider.value + "%"
+      }
+
+      let viewHeightSlider = document.getElementById("viewHeightSlider")
+      let viewHeightText = document.getElementById("viewHeightText");
+      viewHeightSlider.oninput = function() {
+        cone.heightProportion = (viewHeightSlider.value / 100) * cone.maxHeight
+        viewHeightText.innerHTML = viewHeightSlider.value + "%"
+        cone.p.resizeCanvas(scaleX*cone.p.windowWidth-getScrollbarWidth(), cone.heightProportion*cone.p.windowHeight);
+      }
+      
+      let showButton = document.getElementById("showButton");
+      // Get the output text
+      let advSettings = document.getElementById("advSettings");
+      showButton.onclick = function() {
+      // If the checkbox is checked, display the output text
+        if (advSettings.style.display == "none"){
+          advSettings.style.display = "block";
+          showButton.innerHTML = "Hide advanced settings";
+        } else {
+          advSettings.style.display = "none";
+          showButton.innerHTML = "Show advanced settings";
+        }
+      }
+      document.getElementById("iterationButton").onclick = function(){applyIterations()};
+      function applyIterations() {
+        iterations = document.getElementById("iterNum").value
+        for(let i = 0; i < iterations; i ++) {
+          cone.nextDiskStackingIteration();
+          updateGraph();
+        }
+      }
+      //restarts the cone, using the current values of the sliders as parameters
+      document.getElementById("resetButton").onclick = function(){restart()};
+      function restart() {
+        let height = heightSlider.value/100;
+        let angle = angleSlider.value;
+        let rMeridian = rMeridianSlider.value/100;
+        let upPara = document.getElementById("upParastichyNum").value;
+        let downPara = document.getElementById("downParastichyNum").value;
+        if (upPara == 0 || downPara == 0) {
+          upPara = false;
+          downPara = false;
+          document.getElementById("heightDesc").innerHTML = "Height"
+        } else {
+          document.getElementById("heightDesc").innerHTML = "Radius"
+        }
+        document.getElementById("errorMessagesDiv").style.display = "none"
+        cone.p.print(angle)
+        cone.p.print(height)
+        cone.p.print(rMeridian) 
+        try {
+          resetCone(angle*1, height, rMeridian,upPara*1,downPara*1);
+        } catch (error) {
+          document.getElementById("errorMessages").innerHTML = "Program encountered an error generating the new cone. Error message: '" + error + "Now displaying default parastichy numbers (1,1). Please change the parameters."
+          document.getElementById("errorMessagesDiv").style.display = "block"
+          resetCone(angle*1, height, rMeridian,0,0);
+        }
+      }
+      
+      
+    </script>
+    
+  </body>
+</html>
