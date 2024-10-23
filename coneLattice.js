@@ -1,17 +1,11 @@
-/********************************************
-SURF 2023
-Copyright (c) 2023 Emi Neuwalder
-Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php 
-******************************************* */
-/** This code was translated by Emi Neuwalder as directly as possible, with permission, from Matlab code written by Christophe Golé in 2007. All comments were preserved. It was then extended. The point of transition from translated code to extended code is marked by a comment. */
 class ConeLattice {
   constructor(n,m,ang,r,perturb, p,rfin) {
     if (ang > p.PI) {
-      // If the angle measure is greater than Pi, assume that it has been provided in degrees. Convert to radians.
       ang = ang/180 * p.PI
     }
-    p.angleMode(p.RADIANS)
+
     
+    p.angleMode(p.RADIANS)
     function abs(pt) {
         return (pt[0]**2 + pt[1]**2)**0.5
     }
@@ -48,7 +42,7 @@ class ConeLattice {
 
     let c = ang;
     let D = 2*r;
-    let vc_y = -1/(2*p.tan(c/2)); // note that there is no vc_x because vc_x = 0
+    let vc_y = -1/(2*p.tan(c/2));
     let prct_pert_l = perturb; // max percentage rand pertubation of left front vectors
     let prct_pert_r = perturb;
 
@@ -124,7 +118,7 @@ class ConeLattice {
     for (let k = 1; k<(m+n)-1; k++) { // loop to build the front, from left to right
         let temp_x = fr[fr.length-1][0]+L[u][0]
         let temp_y = fr[fr.length-1][1]+L[u][1]- vc_y
-        if (u < n && abs([temp_x,temp_y]) < Rad+10**(-14)) {
+        if (u < n && abs([temp_x,temp_y]) < Rad) {
             fr.push([fr[fr.length-1][0]+L[u][0],fr[fr.length-1][1]+L[u][1]])
             vfr.push(L[u])
             if (leftright[leftright.length-1] == 1) { // this is a local min - put a candidate here
@@ -231,9 +225,7 @@ class ConeLattice {
     
     // p.print(leftright)
     //leftright; 1=down; 0=up
-
-
-    /*end original code. the following is written exclusively by Emi */
+    
     let num_up = 0;
     let num_down = m;
     let updownInd = [];
@@ -267,7 +259,17 @@ class ConeLattice {
       //lowest - 1
       parastichy_ids = updownInd[lowest_disk_id-1]
     } else {
-      parastichy_ids = updownInd[0]
+      // 0
+      if (!updownInd[(lowest_disk_id+1)%updownInd.length]&& !updownInd[lowest_disk_id-1]) {
+        parastichy_ids = updownInd[0]
+      }
+      else if (lowest_disk_id == 0 ||  !updownInd[lowest_disk_id-1]) {
+        parastichy_ids = updownInd[(lowest_disk_id+1)%updownInd.length]
+      } else if (!updownInd[(lowest_disk_id+1)%updownInd.length]) {
+        parastichy_ids = updownInd[lowest_disk_id-1]
+      } else {
+        throw "Something is wrong with finding narrowest angle in max radius"
+      }
     }
     p.print(lowest_disk_id)
     this.updownInd = updownInd
