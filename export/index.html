@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>repl.it</title>
+    <link href="style.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.8.0/chart.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/p5@1.4.1/lib/p5.js"></script>
+  </head>
+  <body>
+  
+    <h1 padding="0" margin="0.5%">Disk Stacking on a Cone (sweep/export)</h1>
+    <div id="explainerText">
+      <p>This is a modified version of a display applet. The angle range corresponds different cone angles; larger cone angles correspond to more rapid growth rates. The iterations range corresponds to the iterations reported. Iterations will always run from 0 to the last skipped to value, regardless of skip value or start value. <br><br>This disk stacking model has two versions: one where it starts with one disk placed at a height determined by the height/radius slider, and another where it starts with a front of multiple disks. In the second version, the radius of the disks is variable, and the radius/height slider controls the radius of the disks. For parastichy numbers where either is equal to zero, or both are equal to 1, the app will run with the first model starting with one disk placed at height. Otherwise, the app will generate a conical front corresponding to the up/down parastichy numbers, and proceed with the second version. The app frequently malfunctioned for parastichy numbers (1,m) where m>2, so in this case, it will run the first version.<br><br>If no csv file is exported, reload the page and try again with different parameters. All ranges are inclusive.<br><br>Each row of the csv file is uniquely identified by the the angle, height/radius, iteration, and initial parastichy numbers (though initial parastichy numbers are constant within a file). In the csv file, a value of false for the up_n/down_m columns corresponds to the first version, because the initial parastichy numbers are not used. </p>
+    </div>
+    <div>
+      <div class="checkBoxContainer" style="display: block;">
+        <p>Up Parastichies</p>
+      <input type="number" min="0" max = "20" value="0" id="upParastichyNum">
+      <p>|| Down Parastichies</p>
+      <input type="number" min="0" max = "20" value="0" id="downParastichyNum">
+      </div>
+      <div class="checkBoxContainer" style="display: block;">
+        <p>Angle range (degrees): Start:</p>
+      <input type="number" min="15" max = "179" value="50" step=".5" id="angleStartNum">
+      <p>|| End:</p>
+      <input type="number" min="15" max = "179" value="60"  step=".5" id="angleEndNum">
+        <p>|| Skip by:</p>
+        <input type="number" min="0.5" max = "30" value="1" id="angleSkipNum" step=".5">
+      </div>
+      <div class="checkBoxContainer" style="display: block;">
+        <p>Height/Radius range (percent): Start:</p>
+      <input type="number" min="0" max = "100" value="50" id="heightStartNum">
+      <p>|| End:</p>
+      <input type="number" min="0" max = "100" value="60" id="heightEndNum">
+        <p>|| Skip by:</p>
+        <input type="number" min="1" max = "20" value="1" id="heightSkipNum">
+      </div>
+      <div class="checkBoxContainer" style="display: block;">
+        <p>Iterations report range: Start:</p>
+      <input type="number" min="0" max = "100" value="0" id="iterStartNum">
+      <p>|| End:</p>
+      <input type="number" min="0" max = "1000" value="20" id="iterEndNum">
+        <p>|| Skip by:</p>
+        <input type="number" min="1" max = "100" value="1" id="iterSkipNum">
+        
+      </div>
+       <div class="checkBoxContainer" style="display: block;">
+        <p> [optional] Use a different file name than the generated default.</p> 
+         <input type="text" id="fileName"> 
+      </div>
+      <button id="resetButton">Generate csv file with settings</button>
+      </div>
+      <div class="checkBoxContainer" style="display: block;">
+        <p id="messages"></p> 
+      </div>
+    <div class="checkBoxContainer" style="display: block;">
+        <p>An extra note on radius/height parameter:<br>
+          Both the radius and height parameters are a percentage value corresponding to a quantity between the minimum viable height/radius and the maximum viable height radius. 
+        </p> 
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script src="disk.js"></script>
+    <script src="coneLattice.js"></script>
+    <script src="stackingCone.js"></script>
+    
+    <script>
+      //restarts the cone, using the current values of the sliders as parameters
+      document.getElementById("resetButton").onclick = function(){restart()};
+      function restart() {
+        let angleStart = document.getElementById("angleStartNum").value*1;
+        let angleEnd = document.getElementById("angleEndNum").value*1;
+        let angleSkip = document.getElementById("angleSkipNum").value*1;
+        
+        let heightStart = document.getElementById("heightStartNum").value/100;
+        let heightEnd = document.getElementById("heightEndNum").value/100;
+        let heightSkip = document.getElementById("heightSkipNum").value/100;
+        
+        let iterStart = document.getElementById("iterStartNum").value*1;
+        let iterEnd = document.getElementById("iterEndNum").value*1;
+        let iterSkip = document.getElementById("iterSkipNum").value*1;
+
+        let upPara = document.getElementById("upParastichyNum").value*1;
+        let downPara = document.getElementById("downParastichyNum").value*1;
+        let data;
+        try {
+          data = extractData([angleStart,angleEnd,angleSkip],[heightStart,heightEnd,heightSkip],upPara,downPara,[iterStart,iterEnd,iterSkip])
+          document.getElementById("messages").innerHTML = "The sweep was completed successfully. Beginning writing to csv file."
+        } catch (error) {
+          document.getElementById("messages").innerHTML = "An error was encountered running this sweep. Please adjust your parameters and try again."
+        }
+        
+        data.unshift(["up_n","down_m","height_radius","angle","iteration","up_front","down_front"])
+        let fileName = document.getElementById("fileName").value;
+        if (fileName && fileName.length > 4 && fileName.endsWith(".csv")) {
+          
+        } else if (fileName && fileName.length > 0) {
+          fileName += ".csv"
+        } else {
+          if (upPara == 0 || downPara == 0 || (upPara == 1 && downPara == 1) || (upPara == 1 && downPara != 2) || (downPara == 1 && upPara != 2)) {
+            upPara = "1"
+            downPara = "1"
+          }
+          fileName = "up" + upPara +"__down" + downPara +"__ang_m" + angleStart + "_M" + angleEnd + "_s" + angleSkip + "__height_m" + heightStart + "_M" + heightEnd + "_s" + heightSkip + "__iteration_m" + iterStart + "_M" + iterEnd + "_s" + iterSkip + ".csv"
+        }
+        try {
+          exportToCsv(fileName,data)
+          document.getElementById("messages").innerHTML = "The file was generated successfully. If you do not see a file after a few seconds, try again with a different browser such as chrome or safari. Sweep data can also be found at developer tools>inspector>console for the data"
+        } catch (error) {
+          document.getElementById("messages").innerHTML = "An error was encountered with the sweep, or with saving the sweep data. Try with different parameters if you suspect the sweep was wrong. If you suspect the file saving was wrong, try again leaving file name blank, try with a smaller range, or contact the developer. Additional troubleshooting: try with a different browser, or check the developer tools>inspector>console for the data."
+        }
+        
+      }
+    </script>
+    
+  </body>
+</html>
