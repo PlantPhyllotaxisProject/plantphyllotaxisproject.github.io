@@ -4,12 +4,6 @@ Copyright (c) 2022 Elaine Demetrion, Lisa Cao
 Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php 
 ********************************************/
 
-/********************************************
-SURF 2023
-Copyright (c) 2023 Emi Neuwalder
-Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php 
-********************************************/
-
 /**
 Note:
 * rotateOntoCone makes some assumptions that could be problematic with larger angles
@@ -24,8 +18,9 @@ class StackingCone {
   @param angle: the angle of the vertex
   @param diskRadius: the radius of all the disks on the cone
   @param height: a float in range [0,1]. How high the first disk should be (relative)
+  @param p2: the namespace in which the transformed, cylindrical cone exists
   @param rMeridian: a float in range (0,2] representing the radius to remain constant in the transformation to a cylinder
-  @param options: an object that can be used to pass additional parameters in, mainly upPara and downPara for the initial fron up and down parastichy numbers, and drawingMode--a string corresponding to the mode in which the transformed cylinder is being drawn. drawingMode can be "log", "circle", "ellipse", or "fixedCircle" -- anything else results in the default. 
+  
   */
   constructor(p, vertexX, vertexY, angle, diskRadius, height = 0.9, rMeridian, options) {
     this.p = p;
@@ -34,10 +29,8 @@ class StackingCone {
     this.diskRadius = diskRadius;
     this.drawingMode = options.drawingMode;
     this.reset(angle, height, rMeridian, options.upPara, options.downPara);   
-    //ID range to replace disks with circles
     this.minCircles = options.minCircles
     this.maxCircles = options.maxCircles
-    this.displayRadius = diskRadius
     this.scaler = this.p.width
     this.scale = 1
   }
@@ -52,7 +45,9 @@ class StackingCone {
     this.maxHeight = 1
     this.upPara = upPara;
     this.downPara = downPara;
-    this.diskNumber = 0; //used as a tag to identify unique disks between different lists of disks.
+    // this.p.print(upPara)
+    // this.p.print(downPara)
+    this.diskNumber = 0; //used as a tag to identify unique disks
     
     this.disks = []; //contains actual disk instances
     this.front = []; //the disks in the front
@@ -76,39 +71,22 @@ class StackingCone {
     this.frontDisks = [];
     if (this.upPara && this.downPara) {
       let min_r = this.minRadius()
-      this.p.print("minRadius complete?")
-      let max_r;
-      try {
-        max_r = this.maxRadius()
-        if (max_r < min_r) {
-          throw "Maximum viable radius less than minimum viable radius."
-        }
-      } catch (error) {
-        document.getElementById("errorMessages").innerHTML = "Program encountered an error calculating the maximum radius for the given parameters. Error message: '" + error + "' Now displaying default parastichy numbers (1,1). Please change the parameters."
-        document.getElementById("errorMessagesDiv").style.display = "block"
-        this.upPara = false;
-        this.downPara = false;
-        this.placeFirstDisk(height);
-        //add extra disks for the visual
-        this.updateExtraDisks();
-        return
-      }
-      
-      this.p.print("maxRadius complete?")
+      this.p.print("minRadius complete")
+      let max_r = this.maxRadius()
+      this.p.print("maxRadius complete for " + this.upPara + " " + this.downPara + " " + this.angle + " " + this.height)
       this.diskRadiusFront = min_r + this.height * (max_r - min_r)
-      let conelattice;
-      try {
-        conelattice = new ConeLattice(this.upPara,this.downPara,this.angle, this.diskRadiusFront,0,this.p, this.diskRadius);
-      } catch (error) {
-        document.getElementById("errorMessages").innerHTML = "Program encountered an error calculating the cone lattice front for the given parameters. Error message: " + error + "Now displaying default parastichy numbers (1,1). Please change the parameters."
-        document.getElementById("errorMessagesDiv").style.display = "block"
-        this.placeFirstDisk(height);
-        //add extra disks for the visual
-        this.updateExtraDisks();
-        return
-      }
-      
+      // this.p.print("max_r:" + max_r)
+      // this.p.print("actualRadius:" + this.diskRadiusFront)
+      // this.p.print("start")
+      // this.p.print(this.upPara)
+      // this.p.print(this.downPara)
+      // this.p.print(this.angle)
+      // this.p.print(this.diskRadiusFront)
+      // this.p.print("end")
+      let conelattice = new ConeLattice(this.upPara,this.downPara,this.angle, this.diskRadiusFront,0,this.p, this.diskRadius);
       let front = conelattice.pts
+      // this.p.print("ptsdist2")
+      // this.p.print(front.map(function(a){return (a[0]**2+a[1]**2)**0.5}))
       this.firstFrontID = conelattice.frt
       this.firstCandidates = conelattice.cand
       this.min_para_ids = conelattice.parastichy_ids
@@ -119,10 +97,17 @@ class StackingCone {
       this.firstCandidates = this.firstCandidates.map(function(a){
         return [a[0], a[1]+h, a[2], a[3]]
       })
+      // this.p.print(front.map(function(a){return (a[0]**2+(a[1]+h)**2)**0.5}))
+      // this.p.print(h)
+      let ptchecker = [];
       for (let i = 0; i < front.length; i ++) {
         this.frontDisks.push(new Disk(this.p,front[i][0], (front[i][1]+h), this.diskRadius, i, this.angle/2, this.rMeridian))
         this.diskNumber ++;
+        ptchecker.push([i,(front[i][0]**2+(front[i][1])**2)**0.5,(front[i][0]**2+(front[i][1])**2)**0.5])
+        
       }
+      // this.p.print("ptchecker")
+      // this.p.print(ptchecker)
       
       this.placeFirstDisks();
     } 
@@ -133,80 +118,107 @@ class StackingCone {
       this.updateExtraDisks();
     }
   }
+  
+  maxRadius0() {
+    
+    let u2 = this.upPara**2
+    let d2 = this.downPara**2
 
-  maxRadius() {
-    this.p.print("starting max radius calculations")
-    let testConeLattice;
-    try {
-      testConeLattice = new ConeLattice(this.upPara,this.downPara,this.angle, this.minRadius()+0.001,0,this.p, this.diskRadius);//generate a cone lattice with a radius just greater than the minimum radius and thus almost certainly an allowed radius. This will let us figure out the up and down parastichy ordering. Except for n = m this actually isn't guaranteed to be the same ordering as it will be for increased radii but that's a problem for the future 
-    } catch (error) {
-      this.p.print(error)
-      this.p.print("testconelattice issue")
+    /** max_r1 calculates the radius of disks that make up a triangle with
+        base = w = 1, and the angle opposite w = 60 degrees
+        This is another maximum radius constraint to consider. */
+    let ud = this.downPara * this.upPara
+  
+    let max_r1 = 1 / (2 * (u2 + d2 - ud)**0.5)
+    if (this.upPara == this.downPara) {
+      return max_r1
     }
+
     
-    
-    let lowest_angle = testConeLattice.parastichy_ids;
+    /** max_r2 Calculates the radius of disks that make up a right triangle with
+    base = w = 1, and height and hypotenuse are 2*r*num_up_parastichies and 2*r*num_down_parastichies (in some order)
+    this is one of the maximum radius constraints to consider
+    This is undefined when num_up_parastichies = num_down_parastichies */
+    let max_r2 = 1 / (2 * this.p.sqrt(this.p.abs(u2 - d2)))
+    return this.p.min(max_r1, max_r2)
+  }
+
+  maxRadiusA() {
     this.p.angleMode(this.p.RADIANS)
     let m = this.p.min(this.upPara, this.downPara)
     let n = this.p.max(this.upPara, this.downPara)
+    if (m == n) {
+      // the formula breaks when m = n, but the max radius for more circles will be less than for fewer, so the "true" max radius might be slightly greater, but a radius less than this maximum radius will still hold.
+      n = n+1 
+    }
+    let p = this.p
+    let c = this.angle * p.PI/180
+    let j = p.sin(c/2)/p.sin(c/(2*n))
+    let k = p.sin(c/2)/p.sin(c/(2*m))
+    let K = p.PI-(1*p.PI/3) + c*(n-1)/(2*n) + c*(m-1)/(2*m) -c
+    let A = 4*(k**2 - j**2)**2*(j**2 + 2*j*k*p.cos(K)+k**2)
+    let B = -8 * ((j**2 - k**2)**2 + 2*k**2*j**2 * p.sin(K)**2)
+    let C = j**2+k**2-2*k*j*p.cos(K)
+    let max_r = p.sqrt((-B-p.sqrt(B**2-4*A*C))/(2*A))
+    return max_r
+  }
+
+  maxRadius() {
+    this.p.print("starting max radius calculations")
+    let testConeLattice = new ConeLattice(this.upPara,this.downPara,this.angle, this.minRadius()+0.0001,0,this.p, this.diskRadius);
+    let lowest_angle = testConeLattice.parastichy_ids;
+    // this.p.print(lowest_angle)
+    this.p.angleMode(this.p.RADIANS)
+    let m = this.p.min(this.upPara, this.downPara)
+    let n = this.p.max(this.upPara, this.downPara)
+    if (m == n) {
+      // the formula breaks when m = n, but the max radius for more circles will be less than for fewer, so the "true" max radius might be slightly greater, but a radius less than this maximum radius will still hold.
+      // n = n+1 
+    }
     let p = this.p
     let c = this.angle * p.PI/180
     var u = lowest_angle[0];// up vector
     var v = lowest_angle[1]; // down vector
+    // this.p.print(v)
+    // this.p.print(u)
     if (this.upPara < this.downPara) {
       // if there are more down vectors than up vectors, then n corresponds to down vectors, so u corresponds to n corresponds to down vectors, so switch u,v
       u = lowest_angle[1];
       v = lowest_angle[0];
     }
-    
+    // Need to write special cases to handle when u or v is negative.
     let angle_u = c*(u-1)/(n)
     let angle_v = c*(v-1)/(m)
-
-    // if u or v negative, they correspond to a rotated disk
+    if (u < 0) {
+      angle_u = c*(-u-1)/n + c
+    }
     if (u < 0) {
       if (u == lowest_angle[0]) {
         angle_u = c*(-u-1)/n - c
-        this.p.print("case 1")
       } else { 
         angle_u = c*(-u-1)/n + c
-        this.p.print("case 2")
       }
     }
     if (v < 0) {
       if (v == lowest_angle[0]) {
         angle_v = c*(-v-1)/m - c
-        this.p.print("case 3")
       } else { 
         angle_v = c*(-v-1)/m + c
-        this.p.print("case 4")
       }
     }
-    this.p.print("case 0")
-    // arbitrary variables used in simplifying. 
     let j = p.sin(c/2)/p.sin(c/(2*n))
     let k = p.sin(c/2)/p.sin(c/(2*m))
-    let K = p.PI-(1*p.PI/3) + angle_u + angle_v - c*(n-1)/(2*n) - c*(m-1)/(2*m)
+    let K = p.PI-(1*p.PI/3) + angle_u + angle_v - c*(n-1)/(2*n) - c*(m-1)/(2*m) 
     let max_r = 0.5*p.sqrt(1/(j**2+k**2+2*k*j*p.cos(K)))
-
+    // this.p.print(max_r)
     this.p.print("ended max radius calculations")
-    let rotated_angle = c/2
-    rotated_angle = 0
-    let sine_quantity = p.cos(p.PI/2 - rotated_angle -((c*(m-1))/(2*m)))*k
-    let max_r_2 = (sine_quantity - ((sine_quantity)**2-(k**2-j**2))**0.5)/(2*(k**2-j**2))
-    this.p.print(max_r_2)
-    if (!max_r_2 || true) {
-      return max_r
-    }
-    this.p.print("ended max radius 2 calculations")
-    return p.min(max_r,max_r_2)
+    return max_r
   }
-  
-  /** minim viable disk radius based on angle, up parastichies and down parastichies */
   minRadius() {
-    this.p.angleMode(this.p.RADIANS);
-    let c = this.angle * this.p.PI / 180;
-    let mn = this.upPara + this.downPara;
-    let r_min = this.p.sin(c/(2*mn))/(2*this.p.sin(c/2));
+    this.p.angleMode(this.p.RADIANS)
+    let c = this.angle * this.p.PI / 180
+    let mn = this.upPara + this.downPara
+    let r_min = this.p.sin(c/(2*mn))/(2*this.p.sin(c/2))
     return r_min;
   }
   
@@ -990,12 +1002,21 @@ Returns whichever is smallest. Note that returning negative numbers implies over
   /*Given two disks, this method determines if the line segment between them would be considered an "up" segment.
   @param leftDisk: the disk whose center is the left end of the segment.
   @param rightDisk: the disk whose center is the right end of the segment. */
-  isUpSegment(leftDisk, rightDisk) {    
+  isUpSegment(leftDisk, rightDisk) {
+
+    //vector to left disk
+    let vertexToLeft = this.vertexToDisk(leftDisk);
+    
+    //vector from left disk to right disk
+    let leftToRight = this.diskToDisk(leftDisk, rightDisk);
+    
+    //calculate dot product
+    let dotProduct = vertexToLeft.dot(leftToRight);
+    
     //if dot product is positive, ...
-    if(rightDisk.dist2 > leftDisk.dist2) {
+    if(dotProduct > 0) {
       return true;
     }
-    return false;
   }
 
   
@@ -1026,11 +1047,6 @@ Returns whichever is smallest. Note that returning negative numbers implies over
   assignNextDiskID(disk) {
     disk.id = this.diskNumber;
     this.diskNumber ++;
-  }
-
-  getHeight() {
-    let tallestDisk = this.disks[this.disks.length-1];
-    return (tallestDisk.x **2 + tallestDisk.y **2)**0.5
   }
 
   /*************** DISPLAY FUNCTIONS ***************/
@@ -1065,15 +1081,6 @@ Returns whichever is smallest. Note that returning negative numbers implies over
       disk.displayDisk(180, [0,0,0,0],this.p); 
     }
 
-    
-
-    this.p.pop();
-
-  }
-
-  displayText() {
-    this.p.push();
-    this.createTransform(this.p);
     //add the text to the disks
     for(let disk of this.disks) {
       this.p.push();
@@ -1090,10 +1097,13 @@ Returns whichever is smallest. Note that returning negative numbers implies over
       disk.displayDiskText([200],this.p);
       this.p.pop();
     }
+
     this.p.pop();
+
   }
 
   displayCylinder() {
+
     let logarithmic = false;
     this.p.fill(0);
     this.p.angleMode(this.p.DEGREES);
@@ -1109,8 +1119,8 @@ Returns whichever is smallest. Note that returning negative numbers implies over
 
 
     if (this.drawingMode == "log"){
-      this.p.line(0.5, this.vertexY, 0.5, relHeight*(1-this.vertexY)/this.scale);
-      this.p.line(-0.5, this.vertexY, -0.5, relHeight*(1-this.vertexY)/this.scale);
+      this.p.line(0.5, this.vertexY, 0.5, relHeight*(1-this.vertexY));
+      this.p.line(-0.5, this.vertexY, -0.5, relHeight*(1-this.vertexY));
     }
     else {
       this.p.line(-this.rMeridian*(alpha*this.p.PI/180), this.vertexY, -this.rMeridian*(alpha*this.p.PI/180), relHeight*(1-this.vertexY)/this.scale);
@@ -1130,47 +1140,18 @@ Returns whichever is smallest. Note that returning negative numbers implies over
     }
     //draw disks
     for(let disk of this.extraDisks) {
-      let currDraw = this.drawingMode
-      if ((this.drawingMode == "circle" || this.drawingMode == "fixedCircle") && (disk.id < this.minCircles || disk.id > this.maxCircles)) {
-        currDraw = "";
-      }
-      if (true || this.drawingMode == "fixedCircle"){
-        disk.radius = this.displayRadius
-      }
-      disk.displayDiskCylinder([240, 240, 240, 230], [200,200,200,230], this.angle, this.rMeridian,currDraw, this.p);
-      disk.radius = this.diskRadius
-      
+      disk.displayDiskCylinder([240, 240, 240, 230], [200,200,200,230], this.angle, this.rMeridian,this.drawingMode, this.p);
     }
     
     for (let disk of this.disks) {
-      let currDraw = this.drawingMode
-      if ((this.drawingMode == "circle" || this.drawingMode == "fixedCircle") && (disk.id < this.minCircles || disk.id > this.maxCircles)) {
-        currDraw = "";
-      }
-      if (this.drawingMode == "fixedCircle"){
-        disk.radius = this.displayRadius
-      }
-      disk.displayDiskCylinder(180, [0,0,0,0], this.angle, this.rMeridian, currDraw, this.p);
-      disk.radius = this.diskRadius
+      disk.displayDiskCylinder(180, [0,0,0,0], this.angle, this.rMeridian, this.drawingMode, this.p);
+      //disk.displayDiskCylinderLogarithmic(180, [0,0,0,0]); 
     }
-    this.p.pop();
-    this.p.pop();
-  }
 
-  displayTextCylinder() {
-    this.p.push()
-    this.createTransformCylinder(this.p);
-    if (this.drawingMode == "log"){
-      this.createTransformLog()
-    }
     //add the text to the disks
     for(let disk of this.disks) {
       this.p.push();
-      if (this.drawingMode == "log"){
-        this.p.translate(disk.logCylX, disk.logCylY);
-      } else {
-        this.p.translate(disk.cylinderX, disk.cylinderY);
-      }
+      this.p.translate(disk.cylinderX, disk.cylinderY);
       this.p.scale(1,-1);
       disk.displayDiskText([0],this.p);
       this.p.pop();
@@ -1178,17 +1159,16 @@ Returns whichever is smallest. Note that returning negative numbers implies over
 
     for(let disk of this.extraDisks) {
       this.p.push();
-      if (this.drawingMode == "log"){
-        this.p.translate(disk.logCylX, disk.logCylY);
-      } else {
-        this.p.translate(disk.cylinderX, disk.cylinderY);
-      }
+      this.p.translate(disk.cylinderX, disk.cylinderY);
       this.p.scale(1,-1);
       disk.displayDiskText([200],this.p);
       this.p.pop();
     }
-    this.p.pop()
+    this.p.pop();
+    this.p.pop();
+
   }
+  
   //draw the front
   drawFront() {
     this.p.push();
@@ -1350,7 +1330,7 @@ Returns whichever is smallest. Note that returning negative numbers implies over
         this.p.push();
         this.createTransformLog()
         let h = this.p.log((r**2)**0.5)/(2*this.angle /2 * this.p.PI/180)
-        this.p.line(-1/this.scale, h, 1/this.scale, h)
+        this.p.line(-1, h, 1, h)
         this.p.pop();
       }
     }
@@ -1385,7 +1365,7 @@ Returns whichever is smallest. Note that returning negative numbers implies over
     for (let disk of this.disks) {
       if (this.drawingMode == "log") {
         this.p.push();
-        this.createTransformLog();
+        this.p.translate(0,2-this.height)
         if(disk.parents.length >= 1) {
           this.p.line(disk.parents[0].logCylX, disk.parents[0].logCylY, disk.logCylX, disk.logCylY);
         }
@@ -1433,16 +1413,11 @@ Returns whichever is smallest. Note that returning negative numbers implies over
     }
     this.p.translate(this.vertexX, yPosn);
     this.p.scale(this.scale)
-    
     //this.p.translate(0,1/2*this.p.height)
   }
-  getTransform() {
-    let transform = this.p.drawingContext.getTransform()
-    let transformArr = [[transform.a, transform.b, transform.c], [transform.d, transform.e, transform.f],[0,0,1]]
-    return transformArr
-  }
+
   logHeightTransform() {
-    return this.disks[0].y- this.p.log((this.disks[0].x**2 + this.disks[0].y**2)**0.5)/(this.angle*this.p.PI/180)
+    return 2-this.height
   }
   createTransformLog() {
     this.p.translate(0,this.logHeightTransform())
@@ -1463,19 +1438,18 @@ Returns whichever is smallest. Note that returning negative numbers implies over
       this.drawOntologicalGraphCylinder()
       
       this.drawFrontCylinder();
-      this.displayTextCylinder();
-      
     } else {
       this.p.background(255);
       this.drawAxes();
       
       //draw the cones
-      this.display();
+      cone.display();
       
-      this.drawOntologicalGraph();
-      this.drawFront();
-      this.displayText()
+      cone.drawOntologicalGraph();
+      cone.drawFront();
     }
     this.p = oldP5;
   }
+
+  
 }

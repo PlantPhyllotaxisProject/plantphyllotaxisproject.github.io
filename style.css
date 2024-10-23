@@ -212,12 +212,3 @@ grid-template-columns: repeat(6, [col] auto ) ;
   .showHide {
     grid-column: col 6 /span 1;
   }
-
-#errorMessagesDiv {
-  padding-left: 1em;
-  border-style: solid;
-  border-color: red;
-  border-width: 0px;  
-  border-left-width: 1em;
-  background-color: #ffdad8;
-}
